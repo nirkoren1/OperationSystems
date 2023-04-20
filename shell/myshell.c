@@ -21,8 +21,6 @@ void add_directories_to_path(int size, char *dirs[]) {
         sprintf(new_path, "%s:%s", dir, path);
         setenv("PATH", new_path, 1);
         free(new_path);
-        printf("dir: %s\n", dir);
-        printf("path: %s\n", getenv("PATH"));
     }
 }
 
