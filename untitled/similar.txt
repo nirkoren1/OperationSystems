@@ -1,0 +1,1 @@
+textComparison/similar/moo/joey1.txt textComparison/similar/moo/joey2.txt

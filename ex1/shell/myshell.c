@@ -24,7 +24,7 @@ void add_directories_to_path(int size, char *dirs[]) {
     }
 }
 
-void run(char *args[100], char *history[100], int *history_index) {
+void run(char *args[100], char *history[100], int *history_index, char *cmd_args) {
     pid_t pid;
     pid = fork();
     if (pid == 0) {
@@ -35,7 +35,7 @@ void run(char *args[100], char *history[100], int *history_index) {
     } else if (pid > 0) {
         // parent process
         history[*history_index] = malloc(102);
-        sprintf(history[*history_index], "%d %s", pid, args[0]);
+        sprintf(history[*history_index], "%d %s", pid, cmd_args);
         *history_index = *history_index + 1;
         wait(NULL);
     } else {
@@ -76,12 +76,14 @@ int main(int argc, char *argv[]) {
     int history_index = 0;
     add_directories_to_path(argc, argv); // add directories to the path
     char *cmd_args = malloc(102);
+    char *cmd_args_copy = malloc(102);
 
     while (1) {
         printf("$ ");
         fflush(stdout);
         fgets(cmd_args, 102, stdin);
         cmd_args[strcspn(cmd_args, "\n")] = 0; // remove newline character from the end of the string
+        strcpy(cmd_args_copy, cmd_args);
         if (strcmp(cmd_args, "") == 0) {
             continue;
         }
@@ -98,7 +100,7 @@ int main(int argc, char *argv[]) {
             if (cd(args[1]) == 0) {
                 // add the pid and the command to the history
                 history[history_index] = malloc(102);
-                sprintf(history[history_index], "%d %s", getpid(), cmd_args);
+                sprintf(history[history_index], "%d %s", getpid(), cmd_args_copy);
                 history_index++;
             }
             continue;
@@ -107,13 +109,13 @@ int main(int argc, char *argv[]) {
         if (strcmp(args[0], "history") == 0) {
             // add the pid and the command to the history
             history[history_index] = malloc(102);
-            sprintf(history[history_index], "%d %s", getpid(), cmd_args);
+            sprintf(history[history_index], "%d %s", getpid(), cmd_args_copy);
             history_index++;
             history_print(100, history, history_index);
             continue;
         }
 
-        run(args, history, &history_index);
+        run(args, history, &history_index, cmd_args_copy);
 
     }
 }
