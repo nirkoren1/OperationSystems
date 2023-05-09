@@ -134,12 +134,7 @@ int main(int argc, char const *argv[]) {
     int read2 = 0;
 
     do {
-//        if (!is_end_of_file1) {
-//            read1 = my_read(fp1, buff1, sizeof(buff1), offset1, &is_end_of_file1);
-//        }
-//        if (!is_end_of_file2) {
-//            read2 = my_read(fp2, buff2, sizeof(buff2), offset2, &is_end_of_file2);
-//        }
+
         read1 = my_read(fp1, buff1, sizeof(buff1), offset1, &is_end_of_file1);
         read2 = my_read(fp2, buff2, sizeof(buff2), offset2, &is_end_of_file2);
 
