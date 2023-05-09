@@ -9,15 +9,10 @@ int my_read(int fd, char *buffer, int size, int read_from, int *is_end_of_file) 
     char buff[BUFFER_SIZE];
     int offset = BUFFER_SIZE;
     int read_max = BUFFER_SIZE;
-    int min_read;
     int i;
-    for (i = read_from; i < size; ++i) {
+    for (i = 0; i < size; ++i) {
         if (offset == read_max) {
-            min_read = BUFFER_SIZE;
-            if (read_from != 0) {
-                min_read = read_from < BUFFER_SIZE ? read_from : BUFFER_SIZE;
-            }
-            read_max = read(fd, buff, min_read);
+            read_max = read(fd, buff, BUFFER_SIZE);
             if (read_max == 0) {
                 *is_end_of_file = 1;
                 return i;
@@ -28,10 +23,10 @@ int my_read(int fd, char *buffer, int size, int read_from, int *is_end_of_file) 
             }
             offset = 0;
         }
-        buffer[i] = buff[offset];
+        buffer[i + BUFFER_SIZE - read_from] = buff[offset];
         offset++;
     }
-    return i;
+    return i + BUFFER_SIZE - read_from;
 }
 
 int check_identical(char *buff1, char *buff2, int size) {
@@ -131,20 +126,23 @@ int main(int argc, char const *argv[]) {
     // read the files
     char buff1[BUFFER_SIZE];
     char buff2[BUFFER_SIZE];
-    int offset1 = 0;
-    int offset2 = 0;
+    int offset1 = BUFFER_SIZE;
+    int offset2 = BUFFER_SIZE;
     int is_end_of_file1 = 0;
     int is_end_of_file2 = 0;
     int read1 = 0;
     int read2 = 0;
 
     do {
-        if (!is_end_of_file1) {
-            read1 = my_read(fp1, buff1, sizeof(buff1), offset1, &is_end_of_file1);
-        }
-        if (!is_end_of_file2) {
-            read2 = my_read(fp2, buff2, sizeof(buff2), offset2, &is_end_of_file2);
-        }
+//        if (!is_end_of_file1) {
+//            read1 = my_read(fp1, buff1, sizeof(buff1), offset1, &is_end_of_file1);
+//        }
+//        if (!is_end_of_file2) {
+//            read2 = my_read(fp2, buff2, sizeof(buff2), offset2, &is_end_of_file2);
+//        }
+        read1 = my_read(fp1, buff1, sizeof(buff1), offset1, &is_end_of_file1);
+        read2 = my_read(fp2, buff2, sizeof(buff2), offset2, &is_end_of_file2);
+
         if (read1 == -1 || read2 == -1) {
             perror("Error in: read");
             close(fp1);
@@ -167,10 +165,8 @@ int main(int argc, char const *argv[]) {
             }
             make_offset_the_beginning_of_the_buffer(offset1, buff1, sizeof(buff1));
             make_offset_the_beginning_of_the_buffer(offset2, buff2, sizeof(buff2));
-            read1 -= offset1;
-            read2 -= offset2;
         }
-        if (is_end_of_file1 && is_end_of_file2) {
+        if (is_end_of_file1 && is_end_of_file2 && read1 == 0 && read2 == 0) {
             break;
         }
     } while (1);
