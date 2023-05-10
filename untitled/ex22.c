@@ -90,7 +90,7 @@ int chdir_prev() {
     return 0;
 }
 
-int write_grade_to_csv(int results_fd, char *student_name, int grade) {
+int write_grade_to_csv(int results_fd, const char *student_name, int grade) {
     int grade_bkp = grade;
     char buff[CONFIG_ROW_SIZE];
     // copy student name
@@ -231,7 +231,6 @@ int compare(char *output_exe, char *true_output, char *subdirs, char *student_en
         // parent process
         int status;
         waitpid(pid, &status, 0);
-        printf("status: %d\n", status);
         if (status == -1) {
             int chdir_res = chdir(subdirs);
             if (chdir_res == -1) {
@@ -269,6 +268,17 @@ int compare(char *output_exe, char *true_output, char *subdirs, char *student_en
             return -1;
         }
         return -1;
+    }
+}
+
+void delete_files() {
+    int rm_res = remove("my_exec");
+    if (rm_res == -1) {
+        perror("Error in: remove");
+    }
+    rm_res = remove("output_exe.txt");
+    if (rm_res == -1) {
+        perror("Error in: remove");
     }
 }
 
@@ -327,7 +337,6 @@ int main(int argc, char const *argv[]) {
             continue;
         }
 
-        printf("%s:\n", student_entry->d_name);
         DIR *inside_dirs = opendir(student_entry->d_name);
         if (inside_dirs == NULL) {
             continue;
@@ -355,7 +364,6 @@ int main(int argc, char const *argv[]) {
 
         if (!c_file_exits) {
             // no c file, write to results.csv
-            printf("No c file\n");
 
             if(write_grade_to_csv(results_fd, student_entry->d_name, 0) == -1){
                 continue;
@@ -367,7 +375,6 @@ int main(int argc, char const *argv[]) {
             continue;
         }
 
-        printf("c file= %s\n", c_file_name);
         if (compile(c_file_name)) {
             // compilation error, write to results.csv
             if (write_grade_to_csv(results_fd, student_entry->d_name, 10) == -1) {
@@ -387,12 +394,15 @@ int main(int argc, char const *argv[]) {
         if (run_res == 1) {
             // timeout, write to results.csv
             if (write_grade_to_csv(results_fd, student_entry->d_name, 20) == -1) {
+                delete_files();
                 chdir_res = chdir_prev();
                 continue;
             }
+            delete_files();
             chdir_res = chdir_prev();
             continue;
         } else if (run_res == -1){
+            delete_files();
             chdir_res = chdir_prev();
             continue;
         }
@@ -404,31 +414,36 @@ int main(int argc, char const *argv[]) {
         connect_path(path1, path2, path3, output_file_path);
 
         int compare_res = compare(output_file_path, output_file, subdirs, student_entry->d_name);
-        printf("compare_res= %d\n", compare_res);
         if (compare_res == -1) {
+            chdir_res = chdir_prev();
             if (chdir_res == -1) {
+                delete_files();
                 continue;
             }
+            delete_files();
             continue;
         }
+
         if (compare_res == 1) {
-            // excellent, write to results.csv
             if (write_grade_to_csv(results_fd, student_entry->d_name, 100) == -1) {
+                delete_files();
                 chdir_res = chdir_prev();
                 continue;
             }
         } else if (compare_res == 2) {
             if (write_grade_to_csv(results_fd, student_entry->d_name, 50) == -1) {
+                delete_files();
                 chdir_res = chdir_prev();
                 continue;
             }
         } else if (compare_res == 3) {
             if (write_grade_to_csv(results_fd, student_entry->d_name, 75) == -1) {
+                delete_files();
                 chdir_res = chdir_prev();
                 continue;
             }
         }
-
+        delete_files();
 
         chdir_res = chdir_prev();
         if (chdir_res == -1) {
