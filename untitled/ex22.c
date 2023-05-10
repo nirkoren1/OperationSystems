@@ -89,6 +89,11 @@ void get_config_details(char const *config_file_path, char subdirs[CONFIG_ROW_SI
 }
 
 int check_c_file(char *file_name) {
+    // check if not a directory
+    if (file_name[0] == '.') {
+        return 0;
+    }
+
     int i = 0;
     while (file_name[i] != '\0') {
         i++;
@@ -225,7 +230,6 @@ int run(int input_fd, int output_fd) {
         return -1;
     }
 }
-
 
 int compare(char *output_exe, char *true_output) {
     pid_t pid;
