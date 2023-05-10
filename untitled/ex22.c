@@ -347,8 +347,8 @@ int main(int argc, char const *argv[]) {
         if (!c_file_exits) {
             // no c file, write to results.csv
 
+            printf("c file not exist\n");
             if(write_grade_to_csv(results_fd, student_entry->d_name, 0) == -1) {
-                printf("Error in: write_grade_to_csv\n");
                 continue;
             }
             continue;
