@@ -267,7 +267,6 @@ int main(int argc, char const *argv[]) {
     char *path1;
     char *path2;
     char *path3;
-    char *path4;
     char assign_path[CONFIG_ROW_SIZE];
     char const *config_file_path = argv[1];
     char subdirs[CONFIG_ROW_SIZE];
@@ -401,6 +400,7 @@ int main(int argc, char const *argv[]) {
             }
         }
         delete_files();
+        closedir(inside_dirs);
     }
 
     closedir(students);
