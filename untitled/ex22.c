@@ -63,7 +63,6 @@ int compile(char *file_name) {
     pid = fork();
     if (pid == 0) {
         // child process
-        // add the pid and the command to the history
         int ex_result = execvp(args[0], args);
         if (ex_result == -1) {
             exit(-1);
@@ -151,6 +150,128 @@ int write_grade_to_csv(int results_fd, char *student_name, int grade) {
     return 0;
 }
 
+void alarm_handler(int sig) {}
+
+int run(int input_fd, int output_fd) {
+    pid_t pid;
+    pid = fork();
+    if (pid == 0) {
+        // child process
+        int dup2_res = dup2(input_fd, STDIN_FILENO);
+        if (dup2_res == -1) {
+            perror("Error in: dup2");
+            exit(-1);
+        }
+        dup2_res = dup2(output_fd, STDOUT_FILENO);
+        if (dup2_res == -1) {
+            perror("Error in: dup2");
+            exit(-1);
+        }
+        char *args[] = {"./my_exec", NULL};
+        int ex_result = execvp(args[0], args);
+        if (ex_result == -1) {
+            exit(-1);
+        }
+    } else if (pid > 0) {
+        // parent process
+        signal(SIGALRM, alarm_handler);
+        alarm(5);
+        int status;
+        waitpid(pid, &status, 0);
+        unsigned int time = alarm(0);
+        if (time == 0) {
+            return 1;
+        }
+        if (status == 256) {
+            return -1;
+        }
+        return 0;
+
+    } else {
+        perror("Error in: fork");
+        return -1;
+    }
+}
+
+void connect_path(const char *path1, const char *path2, const char *path3, char *final_path) {
+    int i = 0;
+    while (path1[i] != '\0') {
+        final_path[i] = path1[i];
+        i++;
+    }
+    final_path[i] = '/';
+    i++;
+    int j = 0;
+    while (path2[j] != '\0') {
+        final_path[i] = path2[j];
+        i++;
+        j++;
+    }
+    final_path[i] = '/';
+    i++;
+    j = 0;
+    while (path3[j] != '\0') {
+        final_path[i] = path3[j];
+        i++;
+        j++;
+    }
+    final_path[i] = '\0';
+}
+
+int compare(char *output_exe, char *true_output, char *subdirs, char *student_entry) {
+    chdir_prev();
+    chdir_prev();
+    pid_t pid;
+    pid = fork();
+    if (pid == 0) {
+        char *args[] = {"./comp.out", true_output, output_exe, NULL};
+        int ex_result = execvp(args[0], args);
+        exit(ex_result);
+    } else if (pid > 0) {
+        // parent process
+        int status;
+        waitpid(pid, &status, 0);
+        printf("status: %d\n", status);
+        if (status == -1) {
+            int chdir_res = chdir(subdirs);
+            if (chdir_res == -1) {
+                perror("Error in: chdir");
+                return -1;
+            }
+            chdir_res = chdir(student_entry);
+            if (chdir_res == -1) {
+                perror("Error in: chdir");
+                return -1;
+            }
+            return -1;
+        }
+        int chdir_res = chdir(subdirs);
+        if (chdir_res == -1) {
+            perror("Error in: chdir");
+            return -1;
+        }
+        chdir_res = chdir(student_entry);
+        if (chdir_res == -1) {
+            perror("Error in: chdir");
+            return -1;
+        }
+        return status / 256;
+    } else {
+        perror("Error in: fork");
+        int chdir_res = chdir(subdirs);
+        if (chdir_res == -1) {
+            perror("Error in: chdir");
+            return -1;
+        }
+        chdir_res = chdir(student_entry);
+        if (chdir_res == -1) {
+            perror("Error in: chdir");
+            return -1;
+        }
+        return -1;
+    }
+}
+
 int main(int argc, char const *argv[]) {
     if (argc != 2) {
         perror("Usage: %s <config_file>\n");
@@ -186,6 +307,12 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
 
+    int error_fd = open("error.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (results_fd == -1) {
+        perror("Error in: open\n");
+        return -1;
+    }
+
     struct dirent *student_entry;
     struct dirent *inside_student_entry;
 
@@ -206,8 +333,6 @@ int main(int argc, char const *argv[]) {
             continue;
         }
 
-        // dup2 error descriptor
-
         int chdir_res = chdir(student_entry->d_name);
         if (chdir_res == -1) {
             perror("Error in: chdir\n");
@@ -216,6 +341,7 @@ int main(int argc, char const *argv[]) {
 
         int c_file_exits = 0;
         char *c_file_name;
+        dup2(error_fd, 2);
         while ((inside_student_entry = readdir(inside_dirs))) {
             if (inside_student_entry->d_name[0] == '.') {
                 continue;
@@ -234,8 +360,6 @@ int main(int argc, char const *argv[]) {
             if(write_grade_to_csv(results_fd, student_entry->d_name, 0) == -1){
                 continue;
             }
-
-
             chdir_res = chdir_prev();
             if (chdir_res == -1) {
                 continue;
@@ -252,12 +376,64 @@ int main(int argc, char const *argv[]) {
             continue;
         }
 
+        int output_exe_fd = open("output_exe.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (output_exe_fd == -1) {
+            perror("Error in: open\n");
+            return -1;
+        }
+
+        lseek(input_fd, 0, SEEK_SET);
+        int run_res = run(input_fd, output_exe_fd);
+        if (run_res == 1) {
+            // timeout, write to results.csv
+            if (write_grade_to_csv(results_fd, student_entry->d_name, 20) == -1) {
+                chdir_res = chdir_prev();
+                continue;
+            }
+            chdir_res = chdir_prev();
+            continue;
+        } else if (run_res == -1){
+            chdir_res = chdir_prev();
+            continue;
+        }
+
+        char output_file_path[CONFIG_ROW_SIZE];
+        char *path1 = subdirs;
+        char *path2 = student_entry->d_name;
+        char *path3 = "output_exe.txt";
+        connect_path(path1, path2, path3, output_file_path);
+
+        int compare_res = compare(output_file_path, output_file, subdirs, student_entry->d_name);
+        printf("compare_res= %d\n", compare_res);
+        if (compare_res == -1) {
+            if (chdir_res == -1) {
+                continue;
+            }
+            continue;
+        }
+        if (compare_res == 1) {
+            // excellent, write to results.csv
+            if (write_grade_to_csv(results_fd, student_entry->d_name, 100) == -1) {
+                chdir_res = chdir_prev();
+                continue;
+            }
+        } else if (compare_res == 2) {
+            if (write_grade_to_csv(results_fd, student_entry->d_name, 50) == -1) {
+                chdir_res = chdir_prev();
+                continue;
+            }
+        } else if (compare_res == 3) {
+            if (write_grade_to_csv(results_fd, student_entry->d_name, 75) == -1) {
+                chdir_res = chdir_prev();
+                continue;
+            }
+        }
+
 
         chdir_res = chdir_prev();
         if (chdir_res == -1) {
             return -1;
         }
-
 
     }
 
