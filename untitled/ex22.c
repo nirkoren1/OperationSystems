@@ -9,6 +9,48 @@
 
 #define CONFIG_ROW_SIZE 155
 
+void connect_path(const char *path1, const char *path2, const char *path3, char *final_path) {
+    int i = 0;
+    while (path1[i] != '\0') {
+        final_path[i] = path1[i];
+        i++;
+    }
+    final_path[i] = '/';
+    i++;
+    int j = 0;
+    while (path2[j] != '\0') {
+        final_path[i] = path2[j];
+        i++;
+        j++;
+    }
+    final_path[i] = '/';
+    i++;
+    j = 0;
+    while (path3[j] != '\0') {
+        final_path[i] = path3[j];
+        i++;
+        j++;
+    }
+    final_path[i] = '\0';
+}
+
+void connect_2_paths(const char *path1, const char *path2, char *final_path) {
+    int i = 0;
+    while (path1[i] != '\0') {
+        final_path[i] = path1[i];
+        i++;
+    }
+    final_path[i] = '/';
+    i++;
+    int j = 0;
+    while (path2[j] != '\0') {
+        final_path[i] = path2[j];
+        i++;
+        j++;
+    }
+    final_path[i] = '\0';
+}
+
 void get_config_details(char const *config_file_path, char subdirs[CONFIG_ROW_SIZE], char input_file[CONFIG_ROW_SIZE],
                         char output_file[CONFIG_ROW_SIZE]) {
     int config_file = open(config_file_path, O_RDONLY);
@@ -79,15 +121,6 @@ int compile(char *file_name) {
         perror("Error in: fork");
         return -1;
     }
-}
-
-int chdir_prev() {
-    int chdir_res = chdir("..");
-    if (chdir_res == -1) {
-        perror("Error in: chdir");
-        return -1;
-    }
-    return 0;
 }
 
 int write_grade_to_csv(int results_fd, const char *student_name, int grade) {
@@ -193,34 +226,8 @@ int run(int input_fd, int output_fd) {
     }
 }
 
-void connect_path(const char *path1, const char *path2, const char *path3, char *final_path) {
-    int i = 0;
-    while (path1[i] != '\0') {
-        final_path[i] = path1[i];
-        i++;
-    }
-    final_path[i] = '/';
-    i++;
-    int j = 0;
-    while (path2[j] != '\0') {
-        final_path[i] = path2[j];
-        i++;
-        j++;
-    }
-    final_path[i] = '/';
-    i++;
-    j = 0;
-    while (path3[j] != '\0') {
-        final_path[i] = path3[j];
-        i++;
-        j++;
-    }
-    final_path[i] = '\0';
-}
 
-int compare(char *output_exe, char *true_output, char *subdirs, char *student_entry) {
-    chdir_prev();
-    chdir_prev();
+int compare(char *output_exe, char *true_output) {
     pid_t pid;
     pid = fork();
     if (pid == 0) {
@@ -232,41 +239,11 @@ int compare(char *output_exe, char *true_output, char *subdirs, char *student_en
         int status;
         waitpid(pid, &status, 0);
         if (status == -1) {
-            int chdir_res = chdir(subdirs);
-            if (chdir_res == -1) {
-                perror("Error in: chdir");
-                return -1;
-            }
-            chdir_res = chdir(student_entry);
-            if (chdir_res == -1) {
-                perror("Error in: chdir");
-                return -1;
-            }
-            return -1;
-        }
-        int chdir_res = chdir(subdirs);
-        if (chdir_res == -1) {
-            perror("Error in: chdir");
-            return -1;
-        }
-        chdir_res = chdir(student_entry);
-        if (chdir_res == -1) {
-            perror("Error in: chdir");
             return -1;
         }
         return status / 256;
     } else {
         perror("Error in: fork");
-        int chdir_res = chdir(subdirs);
-        if (chdir_res == -1) {
-            perror("Error in: chdir");
-            return -1;
-        }
-        chdir_res = chdir(student_entry);
-        if (chdir_res == -1) {
-            perror("Error in: chdir");
-            return -1;
-        }
         return -1;
     }
 }
@@ -287,6 +264,11 @@ int main(int argc, char const *argv[]) {
         perror("Usage: %s <config_file>\n");
         return 1;
     }
+    char *path1;
+    char *path2;
+    char *path3;
+    char *path4;
+    char assign_path[CONFIG_ROW_SIZE];
     char const *config_file_path = argv[1];
     char subdirs[CONFIG_ROW_SIZE];
     char input_file[CONFIG_ROW_SIZE];
@@ -311,13 +293,13 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
 
-    int results_fd = open("results2.csv", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int results_fd = open("results.csv", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (results_fd == -1) {
         perror("Error in: open\n");
         return -1;
     }
 
-    int error_fd = open("error.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int error_fd = open("errors.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (results_fd == -1) {
         perror("Error in: open\n");
         return -1;
@@ -326,27 +308,18 @@ int main(int argc, char const *argv[]) {
     struct dirent *student_entry;
     struct dirent *inside_student_entry;
 
-    int chdir_res = chdir(subdirs);
-    if (chdir_res == -1) {
-        perror("Error in: chdir\n");
-        return -1;
-    }
-
     while ((student_entry = readdir(students))) {
         if (student_entry->d_name[0] == '.') {
             continue;
         }
-
-        DIR *inside_dirs = opendir(student_entry->d_name);
+        path1 = subdirs;
+        path2 = student_entry->d_name;
+        connect_2_paths(path1, path2, assign_path);
+        DIR *inside_dirs = opendir(assign_path);
         if (inside_dirs == NULL) {
             continue;
         }
 
-        int chdir_res = chdir(student_entry->d_name);
-        if (chdir_res == -1) {
-            perror("Error in: chdir\n");
-            continue;
-        }
 
         int c_file_exits = 0;
         char *c_file_name;
@@ -368,14 +341,15 @@ int main(int argc, char const *argv[]) {
             if(write_grade_to_csv(results_fd, student_entry->d_name, 0) == -1){
                 continue;
             }
-            chdir_res = chdir_prev();
-            if (chdir_res == -1) {
-                continue;
-            }
             continue;
         }
 
-        if (compile(c_file_name)) {
+        path1 = subdirs;
+        path2 = student_entry->d_name;
+        path3 = c_file_name;
+        connect_path(path1, path2, path3, assign_path);
+
+        if (compile(assign_path)) {
             // compilation error, write to results.csv
             if (write_grade_to_csv(results_fd, student_entry->d_name, 10) == -1) {
                 continue;
@@ -395,31 +369,17 @@ int main(int argc, char const *argv[]) {
             // timeout, write to results.csv
             if (write_grade_to_csv(results_fd, student_entry->d_name, 20) == -1) {
                 delete_files();
-                chdir_res = chdir_prev();
                 continue;
             }
             delete_files();
-            chdir_res = chdir_prev();
             continue;
         } else if (run_res == -1){
             delete_files();
-            chdir_res = chdir_prev();
             continue;
         }
 
-        char output_file_path[CONFIG_ROW_SIZE];
-        char *path1 = subdirs;
-        char *path2 = student_entry->d_name;
-        char *path3 = "output_exe.txt";
-        connect_path(path1, path2, path3, output_file_path);
-
-        int compare_res = compare(output_file_path, output_file, subdirs, student_entry->d_name);
+        int compare_res = compare("output_exe.txt", output_file);
         if (compare_res == -1) {
-            chdir_res = chdir_prev();
-            if (chdir_res == -1) {
-                delete_files();
-                continue;
-            }
             delete_files();
             continue;
         }
@@ -427,29 +387,20 @@ int main(int argc, char const *argv[]) {
         if (compare_res == 1) {
             if (write_grade_to_csv(results_fd, student_entry->d_name, 100) == -1) {
                 delete_files();
-                chdir_res = chdir_prev();
                 continue;
             }
         } else if (compare_res == 2) {
             if (write_grade_to_csv(results_fd, student_entry->d_name, 50) == -1) {
                 delete_files();
-                chdir_res = chdir_prev();
                 continue;
             }
         } else if (compare_res == 3) {
             if (write_grade_to_csv(results_fd, student_entry->d_name, 75) == -1) {
                 delete_files();
-                chdir_res = chdir_prev();
                 continue;
             }
         }
         delete_files();
-
-        chdir_res = chdir_prev();
-        if (chdir_res == -1) {
-            return -1;
-        }
-
     }
 
     closedir(students);

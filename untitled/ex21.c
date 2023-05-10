@@ -55,24 +55,6 @@ int check_space(char c) {
 int check_similar(char *buff1, char *buff2, int size1, int size2, int* offset1, int* offset2) {
     int i = 0;
     int j = 0;
-    if (size1 == 0) {
-        while (j < size2) {
-            if (!check_space(buff2[j])) {
-                return 0;
-            }
-            j++;
-        }
-        return 1;
-    }
-    if (size2 == 0) {
-        while (i < size1) {
-            if (!check_space(buff1[i])) {
-                return 0;
-            }
-            i++;
-        }
-        return 1;
-    }
     while (i < size1 && j < size2) {
         if (check_space(buff1[i])) {
             i++;
@@ -90,6 +72,20 @@ int check_similar(char *buff1, char *buff2, int size1, int size2, int* offset1, 
     }
     *offset1 = i;
     *offset2 = j;
+
+    while (j < size2) {
+        if (!check_space(buff2[j])) {
+            return 0;
+        }
+        j++;
+    }
+
+    while (i < size1) {
+        if (!check_space(buff1[i])) {
+            return 0;
+        }
+        i++;
+    }
     return 1;
 }
 
