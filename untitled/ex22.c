@@ -90,7 +90,9 @@ void get_config_details(char const *config_file_path, char subdirs[CONFIG_ROW_SI
 
 int check_c_file(char *file_name) {
     // check if not a directory
-    if (file_name[0] == '.') {
+    DIR *dir = opendir(file_name);
+    if (dir != NULL) {
+        closedir(dir);
         return 0;
     }
 
@@ -331,7 +333,11 @@ int main(int argc, char const *argv[]) {
             if (inside_student_entry->d_name[0] == '.') {
                 continue;
             }
-            if (check_c_file(inside_student_entry->d_name)) {
+            path1 = subdirs;
+            path2 = student_entry->d_name;
+            path3 = inside_student_entry->d_name;
+            connect_path(path1, path2, path3, assign_path);
+            if (check_c_file(assign_path)) {
                 c_file_exits = 1;
                 c_file_name = inside_student_entry->d_name;
                 break;
