@@ -23,11 +23,11 @@ int main(int argc, char** argv) {
     }
     // read the lines of the file
     char line[100];
-    char* lines[4];
+    char* lines[4] = {malloc(100), malloc(100), malloc(100), malloc(100)};
     int sumNumItems = 0;
     int index = 0;
     while (fgets(line, sizeof(line), file) != NULL) {
-        lines[index++] = strdup(line);
+        strcpy(lines[index++], line);
         if (index == 4) {
             // create the producer
             BoundedBuffer *buffer = createBoundedBuffer(atoi(lines[2]));
@@ -77,5 +77,9 @@ int main(int argc, char** argv) {
     destroyBoundedBuffer(screenManagerBuffer);
     // destroy producers array
     free(producers);
+    // free lines
+    for (int i = 0; i < 4; i++) {
+        free(lines[i]);
+    }
     return 0;
 }
