@@ -1,3 +1,4 @@
+// Nir Koren 316443902
 #ifndef PRODUCER_H
 #define PRODUCER_H
 #include <pthread.h>
@@ -14,5 +15,6 @@ typedef struct Producer {
 Producer* createProducer(BoundedBuffer* buffer, int id, int numItems);
 void* runProducer(void* arg);
 void destroyProducer(Producer* producer);
+void joinProducer(Producer* producer);
 
 #endif

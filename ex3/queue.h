@@ -1,19 +1,25 @@
+// Nir Koren 316443902
 #ifndef QUEUE_H
 #define QUEUE_H
 
+typedef struct QueueNode {
+    char* data;
+    struct QueueNode* next;
+} QueueNode;
+
 typedef struct Queue {
-    char** buffer;
-    int head;
-    int tail;
-    int size;
-    int count;
+    QueueNode* front;
+    QueueNode* rear;
 } Queue;
 
-Queue* createQue(int size);
-void enqueue(Queue* q, char* item);
-char* dequeue(Queue* q);
-int isEmpty(Queue* q);
-int isFull(Queue* q);
-void destroyQue(Queue* q);
+Queue* createQueue();
+
+int isEmpty(Queue* queue);
+
+void enqueue(Queue* queue, char* data);
+
+char* dequeue(Queue* queue);
+
+void freeQueue(Queue* queue);
 
 #endif

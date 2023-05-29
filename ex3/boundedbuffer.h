@@ -1,13 +1,14 @@
+// Nir Koren 316443902
 #ifndef BOUNDEDBUFFER_H
 #define BOUNDEDBUFFER_H
-#include <pthread.h>
+#include "semaphore.h"
 #include "queue.h"
 
 typedef struct BoundedBuffer {
     Queue* queue;
-    pthread_mutex_t mutex;
-    pthread_cond_t notFull;
-    pthread_cond_t notEmpty;
+    sem_t mutex;
+    sem_t empty;
+    sem_t full;
 } BoundedBuffer;
 
 BoundedBuffer* createBoundedBuffer(int size);

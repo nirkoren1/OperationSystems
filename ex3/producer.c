@@ -1,3 +1,4 @@
+// Nir Koren 316443902
 #include "producer.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -30,25 +31,30 @@ void* runProducer(void* arg) {
     Producer* producer = (Producer*) arg;
     int id = producer->id;
     int numItems = producer->numItems;
-    char *item = malloc(sizeof(char) * 100);
     for (int i = 0; i < numItems; i++) {
+        char *producerItem = malloc(sizeof(char) * 100);
         type = getRandomType();
         if (strcmp(type, "NEWS") == 0) {
-            sprintf(item, "Producer %d %s %d", id, type, producer->numItemsByType[0]++);
+            sprintf(producerItem, "Producer %d %s %d", id, type, producer->numItemsByType[0]++);
         } else if (strcmp(type, "WHEATHER") == 0) {
-            sprintf(item, "Producer %d %s %d", id, type, producer->numItemsByType[1]++);
+            sprintf(producerItem, "Producer %d %s %d", id, type, producer->numItemsByType[1]++);
         } else if (strcmp(type, "SPORTS") == 0) {
-            sprintf(item, "Producer %d %s %d", id, type, producer->numItemsByType[2]++);
+            sprintf(producerItem, "Producer %d %s %d", id, type, producer->numItemsByType[2]++);
+        } else {
+            continue;
         }
-        addBoundedBuffer(producer->buffer, item);
+        addBoundedBuffer(producer->buffer, producerItem);
     }
-    sprintf(item, "DONE");
-    addBoundedBuffer(producer->buffer, item);
-    free(item);
+    char *producerItem = malloc(sizeof(char) * 100);
+    sprintf(producerItem, "DONE");
+    addBoundedBuffer(producer->buffer, producerItem);
     return NULL;
 }
 
 void destroyProducer(Producer* producer) {
-    pthread_join(producer->thread, NULL);
     free(producer);
+}
+
+void joinProducer(Producer* producer) {
+    pthread_join(producer->thread, NULL);
 }

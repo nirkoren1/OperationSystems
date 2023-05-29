@@ -1,38 +1,55 @@
-#include "queue.h"
+// Nir Koren 316443902
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "queue.h"
 
-Queue* createQue(int size) {
-    Queue* q = malloc(sizeof(Queue));
-    q->buffer = malloc(sizeof(char*) * size);
-    q->head = 0;
-    q->tail = 0;
-    q->size = size;
-    q->count = 0;
-    return q;
+Queue* createQueue() {
+    Queue* queue = (Queue*)malloc(sizeof(Queue));
+    queue->front = NULL;
+    queue->rear = NULL;
+    return queue;
 }
 
-void enqueue(Queue* q, char* item) {
-    q->buffer[q->tail] = item;
-    q->tail = (q->tail + 1) % q->size;
-    q->count++;
+int isEmpty(Queue* queue) {
+    return queue->front == NULL;
 }
 
-char* dequeue(Queue* q) {
-    char* item = q->buffer[q->head];
-    q->head = (q->head + 1) % q->size;
-    q->count--;
-    return item;
+void enqueue(Queue* queue, char* data) {
+    QueueNode* newNode = (QueueNode*)malloc(sizeof(QueueNode));
+    newNode->data = data;
+    newNode->next = NULL;
+
+    if (isEmpty(queue)) {
+        queue->front = newNode;
+        queue->rear = newNode;
+    } else {
+        queue->rear->next = newNode;
+        queue->rear = newNode;
+    }
 }
 
-int isEmpty(Queue* q) {
-    return q->count == 0;
+char* dequeue(Queue* queue) {
+    if (isEmpty(queue)) {
+        printf("Error: Queue is empty.\n");
+        return NULL;
+    }
+    QueueNode* temp = queue->front;
+    char* data = temp->data;
+
+    queue->front = queue->front->next;
+    if (queue->front == NULL) {
+        queue->rear = NULL;
+    }
+
+    free(temp);
+    return data;
 }
 
-int isFull(Queue* q) {
-    return q->count == q->size;
-}
-
-void destroyQue(Queue* q) {
-    free(q->buffer);
-    free(q);
+void freeQueue(Queue* queue) {
+    while (!isEmpty(queue)) {
+        char* data = dequeue(queue);
+        free(data);
+    }
+    free(queue);
 }
