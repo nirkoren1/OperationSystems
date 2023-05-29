@@ -45,13 +45,12 @@ void* runProducer(void* arg) {
         }
         addBoundedBuffer(producer->buffer, producerItem);
     }
-    char *producerItem = malloc(sizeof(char) * 100);
-    sprintf(producerItem, "DONE");
-    addBoundedBuffer(producer->buffer, producerItem);
+    addBoundedBuffer(producer->buffer, "DONE");
     return NULL;
 }
 
 void destroyProducer(Producer* producer) {
+    destroyBoundedBuffer(producer->buffer);
     free(producer);
 }
 

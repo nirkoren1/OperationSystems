@@ -67,6 +67,9 @@ void* runDispatcher(void* arg) {
     addUnboundedBuffer(dispatcher->newsQueue, "DONE");
     addUnboundedBuffer(dispatcher->sportsQueue, "DONE");
     addUnboundedBuffer(dispatcher->weatherQueue, "DONE");
+    // free memory
+    free(validIndex);
+    free(producedItem);
     return NULL;
 }
 
